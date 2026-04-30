@@ -35,4 +35,25 @@ public class TicketService : ITicketService
     {
         return await _ticketRepository.GetByIdAsync(id);
     }
+
+    public async Task<Ticket?> UpdateTicketAsync(UpdateTicketDto ticketDto)
+    {
+        var ticket = await _ticketRepository.GetByIdAsync(ticketDto.Id);
+        if (ticket == null) return null;
+
+        ticket.Titulo = ticketDto.Titulo;
+        ticket.Descripcion = ticketDto.Descripcion;
+
+        await _ticketRepository.UpdateAsync(ticket);
+        return ticket;
+    }
+
+    public async Task<bool> DeleteTicketAsync(int id)
+    {
+        var ticket = await _ticketRepository.GetByIdAsync(id);
+        if (ticket == null) return false;
+
+        await _ticketRepository.DeleteAsync(ticket);
+        return true;
+    }
 }

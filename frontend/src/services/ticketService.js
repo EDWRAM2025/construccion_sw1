@@ -48,4 +48,20 @@ export const ticketService = {
 
     return true;
   },
+
+  async updateTicket(id, ticketData) {
+    const response = await fetch(`${API_BASE}/ticket/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ id, ...ticketData }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Error al actualizar el ticket');
+    }
+
+    return response.json();
+  },
 };

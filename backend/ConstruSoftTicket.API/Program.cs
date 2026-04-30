@@ -9,9 +9,9 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllers();
 
-// Configurar Entity Framework Core con SQLite
+// Configurar Entity Framework Core con PostgreSQL
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Inyección de dependencias - Clean Architecture
 builder.Services.AddScoped<ITicketRepository, TicketRepository>();
@@ -34,7 +34,7 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// Aplicar migraciones automáticamente al iniciar
+// Asegurar que la base de datos existe al iniciar
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();

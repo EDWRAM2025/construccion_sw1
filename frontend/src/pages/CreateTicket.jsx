@@ -7,6 +7,7 @@ function CreateTicket() {
   const [tickets, setTickets] = useState([]);
   const [message, setMessage] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [editingId, setEditingId] = useState(null);
 
   useEffect(() => {
     loadTickets();
@@ -29,13 +30,19 @@ function CreateTicket() {
     setMessage(null);
 
     try {
-      await ticketService.createTicket({ titulo, descripcion });
-      setMessage({ type: 'success', text: '✅ Ticket creado exitosamente' });
+      if (editingId) {
+        await ticketService.updateTicket(editingId, { titulo, descripcion });
+        setMessage({ type: 'success', text: '✅ Ticket actualizado exitosamente' });
+        setEditingId(null);
+      } else {
+        await ticketService.createTicket({ titulo, descripcion });
+        setMessage({ type: 'success', text: '✅ Ticket creado exitosamente' });
+      }
       setTitulo('');
       setDescripcion('');
       await loadTickets();
     } catch (error) {
-      setMessage({ type: 'error', text: '❌ Error al crear el ticket. Verifica que el backend esté corriendo.' });
+      setMessage({ type: 'error', text: '❌ Error al procesar el ticket. Verifica que el backend esté corriendo.' });
     } finally {
       setLoading(false);
       setTimeout(() => setMessage(null), 4000);
@@ -53,6 +60,18 @@ function CreateTicket() {
     } finally {
       setTimeout(() => setMessage(null), 4000);
     }
+  };
+
+  const handleEdit = (ticket) => {
+    setEditingId(ticket.id);
+    setTitulo(ticket.titulo);
+    setDescripcion(ticket.descripcion);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setTitulo('');
+    setDescripcion('');
   };
 
   const formatDate = (dateString) => {
@@ -83,8 +102,8 @@ function CreateTicket() {
         {/* Create Ticket Form */}
         <div className="card" style={{ animationDelay: '0.1s' }}>
           <div className="card__header">
-            <div className="card__header-icon card__header-icon--create">✏️</div>
-            <h2 className="card__title">Nuevo Ticket</h2>
+            <div className="card__header-icon card__header-icon--create">{editingId ? '✏️' : '✏️'}</div>
+            <h2 className="card__title">{editingId ? 'Editar Ticket' : 'Nuevo Ticket'}</h2>
           </div>
 
           {message && (
@@ -125,8 +144,18 @@ function CreateTicket() {
               id="submit-ticket-btn"
               disabled={loading || !titulo.trim() || !descripcion.trim()}
             >
-              {loading ? '⏳ Creando...' : '🚀 Crear Ticket'}
+              {loading ? '⏳ Procesando...' : editingId ? '💾 Actualizar Ticket' : '🚀 Crear Ticket'}
             </button>
+            {editingId && (
+              <button
+                type="button"
+                className="btn btn--secondary"
+                onClick={handleCancelEdit}
+                style={{ marginLeft: '10px' }}
+              >
+                ❌ Cancelar
+              </button>
+            )}
           </form>
         </div>
 
@@ -154,13 +183,22 @@ function CreateTicket() {
                 <div className="ticket-item" key={ticket.id}>
                   <div className="ticket-item__header">
                     <span className="ticket-item__id">#{ticket.id}</span>
-                    <button
-                      className="btn-delete"
-                      onClick={() => handleDelete(ticket.id)}
-                      title="Eliminar ticket"
-                    >
-                      🗑️
-                    </button>
+                    <div className="ticket-item__actions">
+                      <button
+                        className="btn-edit"
+                        onClick={() => handleEdit(ticket)}
+                        title="Editar ticket"
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        className="btn-delete"
+                        onClick={() => handleDelete(ticket.id)}
+                        title="Eliminar ticket"
+                      >
+                        🗑️
+                      </button>
+                    </div>
                   </div>
                   <h3 className="ticket-item__title">{ticket.titulo}</h3>
                   <p className="ticket-item__description">{ticket.descripcion}</p>

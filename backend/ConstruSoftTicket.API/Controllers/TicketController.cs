@@ -36,4 +36,21 @@ public class TicketController : ControllerBase
         if (ticket == null) return NotFound();
         return Ok(ticket);
     }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(int id, [FromBody] UpdateTicketDto dto)
+    {
+        if (id != dto.Id) return BadRequest("ID mismatch");
+        var ticket = await _ticketService.UpdateTicketAsync(dto);
+        if (ticket == null) return NotFound();
+        return Ok(ticket);
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var result = await _ticketService.DeleteTicketAsync(id);
+        if (!result) return NotFound();
+        return NoContent();
+    }
 }

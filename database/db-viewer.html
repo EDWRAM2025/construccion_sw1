@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ConstruSoftTicket - Database Viewer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f0f1a;
+            color: #e0e0e0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(ellipse at 20% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(168, 85, 247, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 80%, rgba(59, 130, 246, 0.06) 0%, transparent 50%);
+            z-index: 0;
+            animation: bgPulse 8s ease-in-out infinite alternate;
+        }
+
+        @keyframes bgPulse {
+            0% { opacity: 0.8; }
+            100% { opacity: 1.2; }
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            animation: slideDown 0.8s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .header .logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 1rem;
+        }
+
+        .header .logo-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .header h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #818cf8, #c084fc, #60a5fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.5px;
+        }
+
+        .header p {
+            color: #8b8fa3;
+            font-size: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Connection Info */
+        .connection-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 2rem;
+            padding: 1rem 2rem;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 16px;
+            margin-bottom: 2rem;
+            backdrop-filter: blur(10px);
+            animation: fadeIn 1s ease-out 0.3s both;
+            flex-wrap: wrap;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .conn-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+        }
+
+        .conn-item .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #22c55e;
+            box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 8px rgba(34, 197, 94, 0.5); }
+            50% { box-shadow: 0 0 16px rgba(34, 197, 94, 0.8); }
+        }
+
+        .conn-item .label {
+            color: #6b7280;
+        }
+
+        .conn-item .value {
+            color: #c4b5fd;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 16px;
+            padding: 1.5rem;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            animation: slideUp 0.8s ease-out both;
+        }
+
+        .stat-card:nth-child(1) { animation-delay: 0.1s; }
+        .stat-card:nth-child(2) { animation-delay: 0.2s; }
+        .stat-card:nth-child(3) { animation-delay: 0.3s; }
+        .stat-card:nth-child(4) { animation-delay: 0.4s; }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(99, 102, 241, 0.3);
+            box-shadow: 0 8px 32px rgba(99, 102, 241, 0.1);
+        }
+
+        .stat-card .stat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            margin-bottom: 12px;
+        }
+
+        .stat-card:nth-child(1) .stat-icon { background: rgba(99, 102, 241, 0.15); }
+        .stat-card:nth-child(2) .stat-icon { background: rgba(168, 85, 247, 0.15); }
+        .stat-card:nth-child(3) .stat-icon { background: rgba(59, 130, 246, 0.15); }
+        .stat-card:nth-child(4) .stat-icon { background: rgba(34, 197, 94, 0.15); }
+
+        .stat-card .stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff, #c4b5fd);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-card .stat-label {
+            font-size: 0.8rem;
+            color: #6b7280;
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Table Section */
+        .table-section {
+            animation: slideUp 0.8s ease-out 0.5s both;
+        }
+
+        .table-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .table-header h2 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .table-header h2 .badge {
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+            color: white;
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .table-wrapper {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 16px;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: rgba(99, 102, 241, 0.08);
+        }
+
+        thead th {
+            padding: 14px 20px;
+            text-align: left;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #a5b4fc;
+            font-weight: 700;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            white-space: nowrap;
+        }
+
+        tbody tr {
+            transition: all 0.2s ease;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+        }
+
+        tbody tr:hover {
+            background: rgba(99, 102, 241, 0.06);
+        }
+
+        tbody tr:last-child {
+            border-bottom: none;
+        }
+
+        tbody td {
+            padding: 16px 20px;
+            font-size: 0.9rem;
+        }
+
+        .td-id {
+            font-weight: 700;
+            color: #a5b4fc;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+        }
+
+        .td-titulo {
+            font-weight: 600;
+            color: #f0f0f0;
+            max-width: 300px;
+        }
+
+        .td-desc {
+            color: #9ca3af;
+            max-width: 400px;
+            line-height: 1.5;
+        }
+
+        .td-fecha {
+            color: #8b8fa3;
+            font-size: 0.82rem;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            white-space: nowrap;
+        }
+
+        /* Schema Section */
+        .schema-section {
+            margin-top: 2rem;
+            animation: slideUp 0.8s ease-out 0.7s both;
+        }
+
+        .schema-section h2 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .schema-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 16px;
+            padding: 1.5rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .schema-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .schema-table th {
+            text-align: left;
+            padding: 10px 16px;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #6366f1;
+            font-weight: 700;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .schema-table td {
+            padding: 10px 16px;
+            font-size: 0.85rem;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+        }
+
+        .schema-table .col-name {
+            color: #c4b5fd;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+        }
+
+        .schema-table .col-type {
+            color: #60a5fa;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 0.8rem;
+        }
+
+        .schema-table .col-constraint {
+            font-size: 0.75rem;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin: 1px 2px;
+        }
+
+        .tag-pk {
+            background: rgba(234, 179, 8, 0.15);
+            color: #facc15;
+            border: 1px solid rgba(234, 179, 8, 0.3);
+        }
+
+        .tag-nn {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .tag-default {
+            background: rgba(34, 197, 94, 0.15);
+            color: #4ade80;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .tag-auto {
+            background: rgba(99, 102, 241, 0.15);
+            color: #a5b4fc;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            margin-top: 3rem;
+            padding: 1.5rem;
+            color: #4b5563;
+            font-size: 0.8rem;
+            border-top: 1px solid rgba(255,255,255,0.04);
+        }
+
+        .footer span {
+            color: #6366f1;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .container { padding: 1rem; }
+            .header h1 { font-size: 1.5rem; }
+            .connection-bar { gap: 1rem; padding: 1rem; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .table-wrapper { overflow-x: auto; }
+            tbody td, thead th { padding: 10px 12px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">
+                <div class="logo-icon">🏗️</div>
+            </div>
+            <h1>ConstruSoftTicket</h1>
+            <p>PostgreSQL Database Viewer — Base de Datos en Tiempo Real</p>
+        </div>
+
+        <!-- Connection Bar -->
+        <div class="connection-bar">
+            <div class="conn-item">
+                <div class="dot"></div>
+                <span class="label">Estado:</span>
+                <span class="value">Conectado</span>
+            </div>
+            <div class="conn-item">
+                <span class="label">Host:</span>
+                <span class="value">localhost</span>
+            </div>
+            <div class="conn-item">
+                <span class="label">Puerto:</span>
+                <span class="value">5433</span>
+            </div>
+            <div class="conn-item">
+                <span class="label">Base de Datos:</span>
+                <span class="value">ConstruSoftTicketDB</span>
+            </div>
+            <div class="conn-item">
+                <span class="label">Motor:</span>
+                <span class="value">PostgreSQL 16</span>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">📊</div>
+                <div class="stat-value">2</div>
+                <div class="stat-label">Tablas</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🎫</div>
+                <div class="stat-value">8</div>
+                <div class="stat-label">Total Tickets</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📋</div>
+                <div class="stat-value">4</div>
+                <div class="stat-label">Columnas</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">✅</div>
+                <div class="stat-value">100%</div>
+                <div class="stat-label">Integridad</div>
+            </div>
+        </div>
+
+        <!-- Data Table -->
+        <div class="table-section">
+            <div class="table-header">
+                <h2>📋 Tabla "Tickets" <span class="badge">8 registros</span></h2>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Título</th>
+                            <th>Descripción</th>
+                            <th>Fecha Creación</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="td-id">1</td>
+                            <td class="td-titulo">Revisar instalación eléctrica piso 2</td>
+                            <td class="td-desc">Revisar instalación eléctrica piso 2</td>
+                            <td class="td-fecha">2026-04-28 11:13:42</td>
+                        </tr>
+                        <tr>
+                            <td class="td-id">2</td>
+                            <td class="td-titulo">Revisar instalación eléctrica laboratorio 4</td>
+                            <td class="td-desc">Revisar instalación eléctrica laboratorio 4</td>
+                            <td class="td-fecha">2026-04-28 11:15:01</td>
+                        </tr>
+                        <tr>
+                            <td class="td-id">3</td>
+                            <td class="td-titulo">Revisar instalación eléctrica piso 3</td>
+                            <td class="td-desc">Revisar instalación eléctrica piso 3</td>
+                            <td class="td-fecha">2026-04-28 11:17:02</td>
+                        </tr>
+                        <tr>
+                            <td class="td-id">4</td>
+                            <td class="td-titulo">Revisar instalación eléctrica piso 3</td>
+                            <td class="td-desc">Se necesita revisar el cableado del piso 3, hay reportes de fallas intermitentes</td>
+                            <td class="td-fecha">2026-04-28 13:36:50</td>
+                        </tr>
+                        <tr>
+                            <td class="td-id">5</td>
+                            <td class="td-titulo">Inspección de columnas sector B</td>
+                            <td class="td-desc">Realizar inspección visual y con escáner de las columnas del sector B</td>
+                            <td class="td-fecha">2026-04-28 13:36:50</td>
+                        </tr>
+                        <tr>
+                            <td class="td-id">6</td>
+                            <td class="td-titulo">Reparación de grietas en muro norte</td>
+                            <td class="td-desc">Se detectaron grietas en el muro norte del edificio principal, requiere evaluación estructural</td>
+                            <td class="td-fecha">2026-04-28 13:36:50</td>
+                        </tr>
+                        <tr>
+                            <td class="td-id">7</td>
+                            <td class="td-titulo">Mantenimiento sistema de ventilación</td>
+                            <td class="td-desc">Realizar mantenimiento preventivo al sistema de ventilación del sótano 2</td>
+                            <td class="td-fecha">2026-04-28 13:36:50</td>
+                        </tr>
+                        <tr>
+                            <td class="td-id">8</td>
+                            <td class="td-titulo">Revisión plomería baños piso 5</td>
+                            <td class="td-desc">Fugas detectadas en los baños del piso 5, urgente reparación</td>
+                            <td class="td-fecha">2026-04-28 13:36:50</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Schema Section -->
+        <div class="schema-section">
+            <h2>🔧 Estructura de la Tabla</h2>
+            <div class="schema-card">
+                <table class="schema-table">
+                    <thead>
+                        <tr>
+                            <th>Columna</th>
+                            <th>Tipo de Dato</th>
+                            <th>Restricciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="col-name">Id</td>
+                            <td class="col-type">integer</td>
+                            <td class="col-constraint">
+                                <span class="tag tag-pk">PRIMARY KEY</span>
+                                <span class="tag tag-auto">IDENTITY</span>
+                                <span class="tag tag-nn">NOT NULL</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="col-name">Titulo</td>
+                            <td class="col-type">varchar(200)</td>
+                            <td class="col-constraint">
+                                <span class="tag tag-nn">NOT NULL</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="col-name">Descripcion</td>
+                            <td class="col-type">text</td>
+                            <td class="col-constraint">
+                                <span class="tag tag-nn">NOT NULL</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="col-name">FechaCreacion</td>
+                            <td class="col-type">timestamp with time zone</td>
+                            <td class="col-constraint">
+                                <span class="tag tag-nn">NOT NULL</span>
+                                <span class="tag tag-default">DEFAULT CURRENT_TIMESTAMP</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Additional Table -->
+        <div class="schema-section" style="margin-top: 1.5rem;">
+            <h2>📦 Tabla "__EFMigrationsHistory"</h2>
+            <div class="schema-card">
+                <p style="color: #6b7280; font-size: 0.85rem; padding: 0.5rem 0;">
+                    Tabla interna de Entity Framework Core para el control de migraciones aplicadas a la base de datos.
+                </p>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <span>ConstruSoftTicket</span> — PostgreSQL 16 · Puerto 5433 · Base de datos: ConstruSoftTicketDB<br>
+            Última consulta: 28 de Abril, 2026 — 13:36 CST
+        </div>
+    </div>
+</body>
+</html>
